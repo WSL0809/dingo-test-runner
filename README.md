@@ -70,3 +70,13 @@ allure generate junit-results -o ./allure-output --clean
 allure open allure-output
 
  ./mysql-tester -record=1 -host=172.30.14.172 -port=3307 -user=root -passwd=123123 quickbi/interval
+
+## 版本历史
+
+### v1.0.2 (2025-05-29)
+
+- **数据库连接管理优化**：
+  - 创建了专门的连接管理模块 `ConnectionManager`，负责管理所有数据库连接
+  - 使用连接池技术优化了数据库连接性能
+  - 重构了连接相关的代码，提高了代码的模块化程度和可维护性
+  - 优化了连接资源的使用，减少了不必要的连接创建和销毁

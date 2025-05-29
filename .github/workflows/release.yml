@@ -78,10 +78,17 @@ jobs:
         run: |
           mkdir -p release
           if [[ "${{ matrix.platform }}" == "windows" ]]; then
-            zip -j release/mysql-tester-${{ env.RELEASE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}.zip mysql-tester${{ matrix.extension }}
+            echo "Windows平台使用PowerShell压缩"
           else
             tar -czf release/mysql-tester-${{ env.RELEASE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz mysql-tester${{ matrix.extension }}
           fi
+
+      - name: Create Windows zip archive
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          New-Item -Path release -ItemType Directory -Force
+          Compress-Archive -Path mysql-tester${{ matrix.extension }} -DestinationPath release/mysql-tester-${{ env.RELEASE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}.zip -Force
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1

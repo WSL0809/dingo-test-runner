@@ -107,6 +107,10 @@ type tester struct {
 
 	originalSchemas map[string]struct{}
 
+	// 连接管理器，负责管理所有数据库连接
+	connManager *ConnectionManager
+
+	// 保留curr字段以便兼容旧代码
 	curr *Conn
 
 	buf bytes.Buffer
@@ -168,6 +172,10 @@ func newTester(name string) *tester {
 	t.enableConcurrent = false
 	t.enableInfo = false
 	t.delimiter = ";"
+	// 初始化连接映射
+	t.conn = make(map[string]*Conn)
+	// 初始化连接管理器
+	t.connManager = NewConnectionManager(port, params, retryConnCount)
 
 	return t
 }
@@ -210,25 +218,8 @@ func isTiDB(db *sql.DB) bool {
 }
 
 func (t *tester) addConnection(connName, hostName, userName, password, db string) {
-	var (
-		mdb *sql.DB
-		err error
-	)
-
-	if t.expectedErrs == nil {
-		if t.curr != nil &&
-			t.curr.hostName == hostName &&
-			t.curr.userName == userName &&
-			t.curr.password == password &&
-			t.expectedErrs == nil {
-			// Reuse mdb
-			mdb = t.curr.mdb
-		} else {
-			mdb, err = OpenDBWithRetry("mysql", userName+":"+password+"@tcp("+hostName+":"+port+")/"+db+"?time_zone=%27Asia%2FShanghai%27&allowAllFiles=true"+params, retryConnCount)
-		}
-	} else {
-		mdb, err = OpenDBWithRetry("mysql", userName+":"+password+"@tcp("+hostName+":"+port+")/"+db+"?time_zone=%27Asia%2FShanghai%27&allowAllFiles=true"+params, 1)
-	}
+	// 使用连接管理器添加连接
+	conn, err := t.connManager.AddConnection(connName, hostName, userName, password, db, t.expectedErrs)
 	if err != nil {
 		if t.expectedErrs == nil {
 			log.Fatalf("Open db err %v", err)
@@ -236,55 +227,67 @@ func (t *tester) addConnection(connName, hostName, userName, password, db string
 		t.expectedErrs = nil
 		return
 	}
-	conn, err := initConn(mdb, userName, passwd, hostName, db)
-	if err != nil {
-		if t.expectedErrs == nil {
-			log.Fatalf("Open db err %v", err)
-		}
-		t.expectedErrs = nil
-		return
-	}
+	
+	// 为了兼容旧代码，仍然更新t.conn和t.curr
 	t.conn[connName] = conn
-	t.switchConnection(connName)
-}
-
-func (t *tester) switchConnection(connName string) {
-	conn, ok := t.conn[connName]
-	if !ok {
-		log.Fatalf("Connection %v doesn't exist.", connName)
-	}
-	// switch connection.
-	t.mdb = conn.mdb
 	t.curr = conn
 	t.currConnName = connName
 }
 
-func (t *tester) disconnect(connName string) {
-	conn, ok := t.conn[connName]
-	if !ok {
-		log.Fatalf("Connection %v doesn't exist.", connName)
-	}
-	err := conn.conn.Close()
+func (t *tester) switchConnection(connName string) {
+	// 使用连接管理器切换连接
+	conn, err := t.connManager.SwitchConnection(connName)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Connection %v doesn't exist: %v", connName, err)
 	}
-	delete(t.conn, connName)
-	conn = t.conn[default_connection]
-	t.curr = conn
+	
+	// 为了兼容旧代码，仍然更新t.mdb和t.curr
 	t.mdb = conn.mdb
-	t.currConnName = default_connection
+	t.curr = conn
+	t.currConnName = connName
+	
+	// 同时更新旧的连接映射，保持一致性
+	t.conn[connName] = conn
+}
+
+func (t *tester) disconnect(connName string) {
+	// 使用连接管理器断开连接
+	err := t.connManager.DisconnectConnection(connName)
+	if err != nil {
+		log.Fatalf("断开连接 %v 失败: %v", connName, err)
+	}
+	
+	// 从旧的连接映射中删除
+	delete(t.conn, connName)
+	
+	// 如果存在默认连接，则切换到默认连接
+	if _, ok := t.conn[default_connection]; ok {
+		// 切换到默认连接
+		t.switchConnection(default_connection)
+	} else {
+		// 如果没有默认连接，则清空当前连接
+		t.curr = nil
+		t.mdb = nil
+		t.currConnName = ""
+	}
 }
 
 func (t *tester) preProcess() {
-	dbName := "test"
-	mdb, err := OpenDBWithRetry("mysql", user+":"+passwd+"@tcp("+host+":"+port+")/"+dbName+"?time_zone=%27Asia%2FShanghai%27&allowAllFiles=true"+params, retryConnCount)
+	// 初始化连接映射
 	t.conn = make(map[string]*Conn)
+	
+	// 使用test数据库建立初始连接
+	dbName := "test"
+	conn, err := t.connManager.AddConnection(default_connection, host, user, passwd, dbName, nil)
 	if err != nil {
 		log.Fatalf("Open db err %v", err)
 	}
+	
+	// 获取数据库连接用于执行后续操作
+	mdb := conn.mdb
 
 	if !reserveSchema {
-		// store original schemas
+		// 存储原始数据库架构
 		t.originalSchemas = make(map[string]struct{})
 		rows, err := mdb.Query("show databases")
 		if err != nil {
@@ -297,39 +300,70 @@ func (t *tester) preProcess() {
 		}
 	}
 
+	// 创建测试专用数据库
 	dbName = strings.ReplaceAll(t.name, "/", "__")
 	log.Debugf("Create new db `%s`", dbName)
 	if _, err = mdb.Exec(fmt.Sprintf("create database `%s`", dbName)); err != nil {
 		log.Fatalf("Executing create db %s err[%v]", dbName, err)
 	}
-	t.mdb = mdb
-	conn, err := initConn(mdb, user, passwd, host, dbName)
+	
+	// 断开旧连接
+	t.connManager.DisconnectConnection(default_connection)
+	delete(t.conn, default_connection)
+	
+	// 创建新连接到测试数据库
+	conn, err = t.connManager.AddConnection(default_connection, host, user, passwd, dbName, nil)
 	if err != nil {
 		log.Fatalf("Open db err %v", err)
 	}
+	
+	// 更新tester状态
 	t.conn[default_connection] = conn
 	t.curr = conn
+	t.mdb = conn.mdb
 	t.currConnName = default_connection
 }
 
 func (t *tester) postProcess() {
+	// 使用延迟函数确保所有连接在函数结束时关闭
 	defer func() {
+		// 使用连接管理器关闭所有连接
+		t.connManager.CloseAllConnections()
+		
+		// 为了兼容旧代码，也关闭t.conn中的连接
 		for _, v := range t.conn {
-			v.conn.Close()
+			if v.conn != nil {
+				v.conn.Close()
+			}
 		}
-		t.mdb.Close()
+		
+		// 如果t.mdb存在，也关闭它
+		if t.mdb != nil {
+			t.mdb.Close()
+		}
 	}()
+	
+	// 如果不保留数据库架构，则删除测试过程中创建的数据库
 	if !reserveSchema {
-		rows, err := t.mdb.Query("show databases")
+		// 确保有活动连接
+		if t.curr == nil || t.curr.mdb == nil {
+			log.Error("无法清理数据库：当前连接为空")
+			return
+		}
+		
+		// 查询所有数据库
+		rows, err := t.curr.mdb.Query("show databases")
 		if err != nil {
 			log.Errorf("failed to get databases: %s", err.Error())
 			return
 		}
+		
+		// 删除测试过程中创建的数据库
 		var dbName string
 		for rows.Next() {
 			rows.Scan(&dbName)
 			if _, exists := t.originalSchemas[dbName]; !exists {
-				_, err := t.mdb.Exec(fmt.Sprintf("drop database `%s`", dbName))
+				_, err := t.curr.mdb.Exec(fmt.Sprintf("drop database `%s`", dbName))
 				if err != nil {
 					log.Errorf("failed to drop database: %s", err.Error())
 					return
@@ -601,19 +635,22 @@ func initConn(mdb *sql.DB, host, user, passwd, dbName string) (*Conn, error) {
 
 func (t *tester) concurrentExecute(querys []query, wg *sync.WaitGroup, errOccured chan struct{}) {
 	defer wg.Done()
+	// 创建新的tester实例用于并发执行
 	tt := newTester(t.name)
-	dbName := "test"
-	mdb, err := OpenDBWithRetry("mysql", user+":"+passwd+"@tcp("+host+":"+port+")/"+dbName+"?time_zone=%27Asia%2FShanghai%27&allowAllFiles=true"+params, retryConnCount)
+	
+	// 使用连接管理器创建到测试数据库的连接
+	conn, err := tt.connManager.AddConnection(default_connection, host, user, passwd, t.name, nil)
 	if err != nil {
 		log.Fatalf("Open db err %v", err)
 	}
-	conn, err := initConn(mdb, user, passwd, host, t.name)
-	if err != nil {
-		log.Fatalf("Open db err %v", err)
-	}
+	
+	// 更新tester状态
 	tt.curr = conn
-	tt.mdb = mdb
-	defer tt.mdb.Close()
+	tt.mdb = conn.mdb
+	tt.conn[default_connection] = conn
+	
+	// 确保所有连接在函数结束时关闭
+	defer tt.connManager.CloseAllConnections()
 
 	for _, query := range querys {
 		if len(query.Query) == 0 {
@@ -755,7 +792,9 @@ func (t *tester) checkExpectedError(q query, err error) error {
 		}
 		return errors.Errorf("Statement succeeded, expected error(s) '%s'", strings.Join(t.expectedErrs, ","))
 	}
-	if err != nil && len(t.expectedErrs) == 0 {
+	// 如果有错误但没有期望的错误，则返回该错误
+	if err != nil {
+		// 此时t.expectedErrs肯定为空，因为前面的条件已经处理了有期望错误的情况
 		return err
 	}
 	// Parse the error to get the mysql error code
