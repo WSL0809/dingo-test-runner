@@ -172,42 +172,6 @@ func newTester(name string) *tester {
 	return t
 }
 
-func setSessionVariable(db *Conn) {
-	ctx := context.Background()
-	if _, err := db.conn.ExecContext(ctx, "SET @@tidb_init_chunk_size=1"); err != nil {
-		log.Fatalf("Executing \"SET @@tidb_init_chunk_size=1\" err[%v]", err)
-	}
-	if _, err := db.conn.ExecContext(ctx, "SET @@tidb_max_chunk_size=32"); err != nil {
-		log.Fatalf("Executing \"SET @@tidb_max_chunk_size=32\" err[%v]", err)
-	}
-	if _, err := db.conn.ExecContext(ctx, "SET @@tidb_multi_statement_mode=1"); err != nil {
-		log.Fatalf("Executing \"SET @@tidb_multi_statement_mode=1\" err[%v]", err)
-	}
-	if _, err := db.conn.ExecContext(ctx, "SET @@tidb_hash_join_concurrency=1"); err != nil {
-		log.Fatalf("Executing \"SET @@tidb_hash_join_concurrency=1\" err[%v]", err)
-	}
-	if _, err := db.conn.ExecContext(ctx, "SET @@tidb_enable_pseudo_for_outdated_stats=false"); err != nil {
-		log.Fatalf("Executing \"SET @@tidb_enable_pseudo_for_outdated_stats=false\" err[%v]", err)
-	}
-	// enable tidb_enable_analyze_snapshot in order to let analyze request with SI isolation level to get accurate response
-	if _, err := db.conn.ExecContext(ctx, "SET @@tidb_enable_analyze_snapshot=1"); err != nil {
-		log.Warnf("Executing \"SET @@tidb_enable_analyze_snapshot=1 failed\" err[%v]", err)
-	} else {
-		log.Debugf("enable tidb_enable_analyze_snapshot")
-	}
-	if _, err := db.conn.ExecContext(ctx, "SET @@tidb_enable_clustered_index='int_only'"); err != nil {
-		log.Fatalf("Executing \"SET @@tidb_enable_clustered_index='int_only'\" err[%v]", err)
-	}
-}
-
-// isTiDB returns true if the DB is confirmed to be TiDB
-func isTiDB(db *sql.DB) bool {
-	if _, err := db.Exec("SELECT tidb_version()"); err != nil {
-		log.Infof("This doesn't look like a TiDB server, err[%v]", err)
-		return false
-	}
-	return true
-}
 
 func (t *tester) addConnection(connName, hostName, userName, password, db string) {
 	var (
@@ -588,9 +552,6 @@ func initConn(mdb *sql.DB, host, user, passwd, dbName string) (*Conn, error) {
 		db:       dbName,
 		conn:     sqlConn,
 	}
-	if isTiDB(mdb) {
-		setSessionVariable(conn)
-	}
 	if dbName != "" {
 		if _, err = sqlConn.ExecContext(context.Background(), fmt.Sprintf("use `%s`", dbName)); err != nil {
 			log.Fatalf("Executing Use test err[%v]", err)
@@ -755,7 +716,7 @@ func (t *tester) checkExpectedError(q query, err error) error {
 		}
 		return errors.Errorf("Statement succeeded, expected error(s) '%s'", strings.Join(t.expectedErrs, ","))
 	}
-	if err != nil && len(t.expectedErrs) == 0 {
+	if len(t.expectedErrs) == 0 {
 		return err
 	}
 	// Parse the error to get the mysql error code
