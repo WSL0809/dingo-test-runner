@@ -52,7 +52,7 @@ var (
 
 func init() {
 	flag.StringVar(&host, "host", "127.0.0.1", "The host of the TiDB/MySQL server.")
-	flag.StringVar(&port, "port", "4000", "The listen port of TiDB/MySQL server.")
+	flag.StringVar(&port, "port", "3306", "The listen port of TiDB/MySQL server.")
 	flag.StringVar(&user, "user", "root", "The user for connecting to the database.")
 	flag.StringVar(&passwd, "passwd", "", "The password for the user.")
 	flag.StringVar(&logLevel, "log-level", "error", "The log level of mysql-tester: info, warn, error, debug.")
