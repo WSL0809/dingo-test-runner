@@ -30,3 +30,4 @@ gen_perror
 .DS_Store
 mysql-tester
 allure-output
+result_xml
