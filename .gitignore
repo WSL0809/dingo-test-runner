@@ -29,3 +29,4 @@ gen_perror
 ### MAC ###
 .DS_Store
 mysql-tester
+allure-output
