@@ -62,10 +62,10 @@ For more details about how to run and write test cases, see the [Wiki](https://g
 使用以下命令可以生成 JUnit XML 格式的测试报告：
 
 ```sh
-./mysql-tester --report --junit-results-dir=./junit-results [测试文件]
+./mysql-tester -xunitfile=./result-file.xml [测试文件]
 ```
 
-allure generate junit-results -o ./allure-output --clean
+allure generate result-file.xml -o ./allure-output --clean
 
 allure open allure-output
 

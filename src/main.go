@@ -309,7 +309,12 @@ func (t *tester) addFailure(testSuite *XUnitTestSuite, err *error, cnt int) {
 		Name:       t.testFileName(),
 		Time:       "",
 		QueryCount: cnt,
-		Failure:    (*err).Error(),
+		Status:     "failed",
+		Failure:    &XUnitFailure{
+			Message: "Test failed",
+			Type:    "AssertionError",
+			Content: (*err).Error(),
+		},
 	})
 	testSuite.Failures++
 }
@@ -319,6 +324,7 @@ func (t *tester) addSuccess(testSuite *XUnitTestSuite, startTime *time.Time, cnt
 		Classname:  "",
 		Name:       t.testFileName(),
 		Time:       fmt.Sprintf("%fs", time.Since(*startTime).Seconds()),
+		Status:     "passed",
 		QueryCount: cnt,
 	})
 }
