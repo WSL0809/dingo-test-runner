@@ -1,0 +1,63 @@
+DROP TABLE IF EXISTS product_catalog;
+CREATE TABLE product_catalog (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_code VARCHAR(100),
+    details VARCHAR(255),
+    log_entry VARCHAR(255)
+);
+
+INSERT INTO product_catalog (product_code, details, log_entry) VALUES ('ELEC-TV-SONY-XR55A80L-US', '规格:55英寸,4K,OLED;颜色:黑色', 'ITEM_ADDED_BY:admin_ops;DATE:2025-01-15'),('BOOK-TECH-ORLY-JAVAGUIDE-EN', '作者:B.Gosling;页数:720;语言:英语', 'ITEM_ADDED_BY:editor_jane;DATE:2025-02-20'),('HOME-APPL-DYSN-V15DETECT-EU', '类型:吸尘器,手持式;配件:5种吸头', 'ITEM_ADDED_BY:store_mgr;DATE:2025-03-10'),('ELEC-CAM-CANON-EOSR6-AS', '特性:全画幅,20MP;包含:镜头套件', 'ITEM_ADDED_BY:photog_ken;DATE:2025-04-05'),('BOOK-FICT-PENG-THEHOBBIT-EN', '出版商:Penguin Books;系列:Middle-earth', 'ITEM_ADDED_BY:reader_sam;DATE:2025-04-22');
+
+--echo
+
+-- echo -- 基本用法
+SELECT INSTR('Hello World', 'World') AS pos_world;
+
+-- echo -- 子字符串在开头
+SELECT INSTR('Hello World', 'Hello') AS pos_hello;
+
+-- echo -- 子字符串在末尾
+SELECT INSTR('Hello World', 'rld') AS pos_rld;
+
+-- echo -- 子字符串未找到 (超出范围)
+SELECT INSTR('Hello World', 'Universe') AS pos_universe;
+
+-- echo -- 空字符串作为子字符串被搜索
+SELECT INSTR('Hello World', '') AS pos_empty_substr;
+
+-- echo -- 空字符串作为主字符串被搜索
+SELECT INSTR('', 'World') AS pos_empty_str;
+
+-- echo -- 两个参数都为空字符串
+SELECT INSTR('', '') AS pos_both_empty;
+
+-- echo -- NULL 测试 (任一参数为NULL，结果为NULL)
+SELECT INSTR(NULL, 'World') AS pos_null_str;
+SELECT INSTR('Hello World', NULL) AS pos_null_substr;
+SELECT INSTR(NULL, NULL) AS pos_null_both;
+
+-- echo -- 大小写敏感性测试
+SELECT INSTR('HelloWorld', 'world') AS pos_case_sensitive;
+SELECT INSTR('HelloWorld', 'World') AS pos_case_match;
+
+-- echo -- 使用 LOWER() 或 UPPER() 实现大小写不敏感搜索
+SELECT INSTR(LOWER('HelloWorld'), LOWER('world')) AS pos_case_insensitive_lower;
+SELECT INSTR(UPPER('HelloWorld'), UPPER('WORLD')) AS pos_case_insensitive_upper;
+
+-- echo -- 重叠子字符串 (INSTR 只返回第一次出现的位置)
+SELECT INSTR('ababab', 'aba') AS pos_overlapping;
+
+-- echo -- 数字作为字符串参数 (MySQL会自动转换)
+SELECT INSTR('12345', '23') AS pos_numeric_str_1;
+SELECT INSTR(12345, 23) AS pos_numeric_str_2;
+SELECT INSTR('abc123def', 123) AS pos_numeric_substr;
+
+-- echo -- 特殊字符作为子字符串
+SELECT INSTR('Hello-World!', '-') AS pos_hyphen;
+SELECT INSTR('name@example.com', '@') AS pos_at_symbol;
+
+-- echo -- 多字节字符 (UTF-8 示例，结果取决于字符的字节数和MySQL配置)
+SELECT INSTR('你好世界', '好') AS pos_multibyte_char;
+
+-- echo -- 子字符串比主字符串长
+SELECT INSTR('Hi', 'Hello') AS pos_substr_longer;

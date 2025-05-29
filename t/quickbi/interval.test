@@ -1,0 +1,214 @@
+DROP TABLE IF EXISTS inter2;
+CREATE TABLE inter2 (
+    id int,
+    name varchar(64),
+    age int,
+    amount DOUBLE,
+    address varchar(255),
+    birthday DATE,
+    create_time TIME,
+    update_time TIMESTAMP,
+    is_delete boolean,
+    PRIMARY KEY (id)
+);
+
+insert into inter2 values
+(1,'zhangsan',18,23.50,'2024-12-31','1998-4-6', '08:10:10', '2022-4-8 18:05:07', 1),
+(2,'lisi',25,895.00,'2025-02-23 12:30:00', '1988-2-05', '06:15:8', '2000-02-29 00:00:00', 0),
+(3,'li3',55,123.123,'2024/11/15', '2022-03-4', '07:3:15', '1999-2-28 23:59:59', 0),
+(4,'HAHA',57,9.0762556,'1998/8/8 10:30:40', '2020-11-11', '5:59:59', '2021-05-04 12:00:00', 1),
+(5,'awJDs',1,1453.9999,'2025.06.08', '2010-10-1', '19:0:0', '2010-10-1 02:02:02', 1),
+(6,'123',60,0,'2025.5.31 21:21:21', '1987-7-16', '1:2:3', '1952-12-31 12:12:12', 1),
+(7,'yamaha',76,2.30,'1949.10.1', '1949-01-01', '0:30:8', '2022-12-01 1:2:3', 0),
+(8,'wangwu',44,1000,'1970.1.1 00:00:00','2015-09-10', '03:45:10', '2001-11-11 18:05:07', 1),
+(9,'Steven',20,2000,'19890304', '1995-12-15', '16:35:38', '2008-08-08 08:00:00', 1),
+(10,'3M',31,20010,'20201220202020', '2021-03-04', '17:30:15', '1999-2-28 00:59:59', 0),
+(11,null,31,20010,null, null, null, null, null);
+--echo -- 对timestamp字段进行加年（正数）
+# --begin_concurrent
+select (update_time + interval 2 year) as uptime from inter2;
+select (update_time + interval 0 year) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加年（负数）
+select (update_time + interval -2 year) as uptime from inter2;
+select (update_time + interval -0 year) as uptime from inter2;
+select (update_time + interval -100 year) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加月（正数）
+select (update_time + interval 12 month) as uptime from inter2;
+select (update_time + interval 0 month) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加月（负数）
+select (update_time + interval -12 month) as uptime from inter2;
+select (update_time + interval -0 month) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加日（正数）
+select (update_time + interval 2 day) as uptime from inter2;
+select (update_time + interval 0 day) as uptime from inter2;
+select (update_time + interval 100 day) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加日（负数）
+select (update_time + interval -2 day) as uptime from inter2;
+select (update_time + interval -0 day) as uptime from inter2;
+select (update_time + interval -100 day) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加周（正数）
+select (update_time + interval 3 week) as uptime from inter2;
+select (update_time + interval 0 week) as uptime from inter2;
+select (update_time + interval 53 week) as uptime from inter2;
+--echo -- 对timestamp字段进行加周（负数）
+select (update_time + interval -52 week) as uptime from inter2;
+select (update_time + interval -0 week) as uptime from inter2;
+select (update_time + interval -10 week) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加小时（正数）
+select (update_time + interval 24 hour) as uptime from inter2;
+select (update_time + interval 0 hour) as uptime from inter2;
+select (update_time + interval 1000 hour) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加小时（负数）
+select (update_time + interval -24 hour) as uptime from inter2;
+select (update_time + interval -0 hour) as uptime from inter2;
+select (update_time + interval -100 hour) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加分钟（正数）
+select (update_time + interval 2 minute) as uptime from inter2;
+select (update_time + interval 0 minute) as uptime from inter2;
+select (update_time + interval 1000 minute) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加分钟（负数）
+select (update_time + interval -2 minute) as uptime from inter2;
+select (update_time + interval -0 minute) as uptime from inter2;
+select (update_time + interval -1000 minute) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加秒（正数）
+select (update_time + interval 2 second) as uptime from inter2;
+select (update_time + interval 0 second) as uptime from inter2;
+select (update_time + interval 1000 second) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加秒（负数）
+select (update_time + interval -2 second) as uptime from inter2;
+select (update_time + interval -0 second) as uptime from inter2;
+select (update_time + interval -1000 second) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加毫秒（正数）
+select (update_time + interval 0.002 second) as uptime from inter2;
+select (update_time + interval 0.000 second) as uptime from inter2;
+select (update_time + interval 1.000 second) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加毫秒（负数）
+select (update_time + interval -0.002 second) as uptime from inter2;
+select (update_time + interval -0.000 second) as uptime from inter2;
+select (update_time + interval -1.000 second) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加微秒（正数）
+select (update_time + interval 0.000002 second) as uptime from inter2;
+select (update_time + interval 0.000000 second) as uptime from inter2;
+select (update_time + interval 0.001000 second) as uptime from inter2;
+
+--echo -- 对timestamp字段进行加微秒（负数）
+select (update_time + interval -0.000002 second) as uptime from inter2;
+select (update_time + interval -0.000000 second) as uptime from inter2;
+select (update_time + interval -0.001000 second) as uptime from inter2;
+
+# --end_concurrent
+
+--echo -- 对 Date 类型进行加年（正数）
+select 
+  (birthday + interval 2 year) as uptime_2yr,
+  (birthday + interval 0 year) as uptime_0yr,
+  (birthday + interval 100 year) as uptime_100yr
+from inter2;
+
+--echo -- 对 Date 类型进行加年（负数）
+select (birthday + interval -10 year) as uptime from inter2;
+
+
+--echo -- 对 Date 类型进行减年（正数）
+select (birthday - interval 0 year) as uptime from inter2;
+select (birthday - interval 100 year) as uptime from inter2;
+
+--echo -- 对 Date 类型进行减年（负数）
+select (birthday - interval -99 year) as uptime from inter2;
+
+--echo -- 对 Date 类型进行加月（正数）
+select 
+  (birthday + interval 3 month) as bid_3mo,
+  (birthday + interval 0 month) as bid_0mo,
+  (birthday + interval 99 month) as bid_99mo
+from inter2;
+
+--echo -- 对 Date 类型进行加月（负数）
+select (birthday + interval -15 month) as bid from inter2;
+
+--echo -- 对 Date 类型进行减月（正数）
+select 
+  (birthday - interval 100 month) as bid_100mo,
+  (birthday - interval 0 month) as bid_0mo
+from inter2;
+
+--echo -- 对 Date 类型进行减月（负数）
+select (birthday - interval -6 month) as bid from inter2;
+--echo -- 对 Date 类型进行加减周（正负数）
+select 
+  (birthday + interval 3 week) as add_pos_3wk,
+  (birthday + interval -10 week) as add_neg_10wk,
+  (birthday - interval 53 week) as sub_pos_53wk,
+  (birthday - interval -52 week) as sub_neg_52wk
+from inter2;
+
+--echo -- 对 Date 类型进行加日（正数）
+select (birthday + interval 30 day) as bid30d, (birthday + interval 0 day) as bid0d from inter2;
+
+--echo -- 对 Date 类型进行加日（负数）
+select (birthday + interval -100 day) as bid from inter2;
+
+--echo -- 对 Date 类型进行减日（正数）
+select (birthday - interval 500 day) as bid500d, (birthday - interval 0 day) as bid0d from inter2;
+
+--echo -- 对 Date 类型进行减日（负数）
+select (birthday - interval -1 day) as bid from inter2;
+--echo -- 对time字段进行加减时分秒操作
+
+select 
+  (create_time + interval 2 hour) as add_pos_2hr,
+  (create_time + interval 0 hour) as add_pos_0hr,
+  (create_time + interval 100 hour) as add_pos_100hr,
+  (create_time + interval -2 hour) as add_neg_2hr,
+  (create_time + interval -0 hour) as add_neg_0hr,
+  (create_time + interval -100 hour) as add_neg_100hr,
+  (create_time - interval 2 hour) as sub_pos_2hr,
+  (create_time - interval 0 hour) as sub_pos_0hr,
+  (create_time - interval 100 hour) as sub_pos_100hr,
+  (create_time - interval -2 hour) as sub_neg_2hr,
+  (create_time - interval -0 hour) as sub_neg_0hr,
+  (create_time - interval -100 hour) as sub_neg_100hr,
+  (create_time + interval 2 minute) as add_pos_2min,
+  (create_time + interval 0 minute) as add_pos_0min,
+  (create_time + interval 100 minute) as add_pos_100min,
+  (create_time + interval -2 minute) as add_neg_2min,
+  (create_time + interval -0 minute) as add_neg_0min,
+  (create_time + interval -100 minute) as add_neg_100min,
+  (create_time - interval 2 minute) as sub_pos_2min,
+  (create_time - interval 0 minute) as sub_pos_0min,
+  (create_time - interval 100 minute) as sub_pos_100min,
+  (create_time - interval -2 minute) as sub_neg_2min,
+  (create_time - interval -0 minute) as sub_neg_0min,
+  (create_time - interval -100 minute) as sub_neg_100min,
+  (create_time + interval 2 second) as add_pos_2sec,
+  (create_time + interval 0 second) as add_pos_0sec,
+  (create_time + interval 100 second) as add_pos_100sec,
+  (create_time + interval -2 second) as add_neg_2sec,
+  (create_time + interval -0 second) as add_neg_0sec,
+  (create_time + interval -100 second) as add_neg_100sec,
+  (create_time - interval 2 second) as sub_pos_2sec,
+  (create_time - interval 0 second) as sub_pos_0sec,
+  (create_time - interval 100 second) as sub_pos_100sec,
+  (create_time - interval -2 second) as sub_neg_2sec,
+  (create_time - interval -0 second) as sub_neg_0sec,
+  (create_time - interval -100 second) as sub_neg_100sec
+from inter2;
+
+
+--echo -- 单条语句中多次使用interval
+select (birthday + interval 2 year - interval 3 month + interval 5 day) as complex_date, (update_time + interval 1 hour - interval 30 minute + interval 15 second) as complex_time from inter2;

@@ -1,0 +1,118 @@
+DROP TABLE IF EXISTS quarter_test_data;
+
+CREATE TABLE quarter_test_data (
+    test_id VARCHAR(10) PRIMARY KEY,
+    description VARCHAR(255),
+    date_val DATE,
+    timestamp_val TIMESTAMP,
+    string_val VARCHAR(50),
+    int_val INT,
+    float_val FLOAT,
+    bool_val BOOLEAN,
+    expected_quarter INT
+);
+
+--echo Date Value Inserts (Single Line)
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC001', 'Q1 DATE (Jan)', DATE '2023-01-15', 1);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC002', 'Q1 DATE (Mar)', DATE '2023-03-31', 1);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC003', 'Q2 DATE (Apr)', DATE '2023-04-01', 2);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC004', 'Q2 DATE (May - example)', DATE '2023-05-12', 2);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC005', 'Q2 DATE (Jun)', DATE '2023-06-30', 2);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC006', 'Q3 DATE (Jul)', DATE '2023-07-01', 3);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC007', 'Q3 DATE (Sep)', DATE '2023-09-30', 3);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC008', 'Q4 DATE (Oct)', DATE '2023-10-01', 4);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC009', 'Q4 DATE (Dec)', DATE '2023-12-31', 4);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC014', 'Boundary Q1 Start DATE', DATE '2023-01-01', 1);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC015', 'Boundary Q1 End DATE', DATE '2023-03-31', 1);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC016', 'Boundary Q2 Start DATE', DATE '2023-04-01', 2);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC017', 'Boundary Q2 End DATE', DATE '2023-06-30', 2);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC018', 'Boundary Q3 Start DATE', DATE '2023-07-01', 3);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC019', 'Boundary Q3 End DATE', DATE '2023-09-30', 3);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC020', 'Boundary Q4 Start DATE', DATE '2023-10-01', 4);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC021', 'Boundary Q4 End DATE', DATE '2023-12-31', 4);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC025', 'Leap Year Feb 29 DATE', DATE '2024-02-29', 1);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC026', 'Leap Year Mar 01 DATE', DATE '2024-03-01', 1);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC027', 'Common Year Feb 28 DATE', DATE '2023-02-28', 1);
+INSERT INTO quarter_test_data (test_id, description, date_val, expected_quarter) VALUES ('TC028', 'Common Year Mar 01 DATE', DATE '2023-03-01', 1);
+
+--echo Timestamp Value Inserts (Single Line, using direct strings)
+INSERT INTO quarter_test_data (test_id, description, timestamp_val, expected_quarter) VALUES ('TC010', 'Q1 TIMESTAMP (Jan, midnight)', '2023-01-15 00:00:00', 1);
+INSERT INTO quarter_test_data (test_id, description, timestamp_val, expected_quarter) VALUES ('TC011', 'Q2 TIMESTAMP (May - example)', '2023-05-12 12:12:12', 2);
+INSERT INTO quarter_test_data (test_id, description, timestamp_val, expected_quarter) VALUES ('TC012', 'Q3 TIMESTAMP (Aug, specific time)', '2023-08-20 15:30:45', 3);
+INSERT INTO quarter_test_data (test_id, description, timestamp_val, expected_quarter) VALUES ('TC013', 'Q4 TIMESTAMP (Nov, near midnight)', '2023-11-10 23:59:59', 4);
+INSERT INTO quarter_test_data (test_id, description, timestamp_val, expected_quarter) VALUES ('TC022', 'Boundary Q1 Start TIMESTAMP', '2023-01-01 00:00:00', 1);
+INSERT INTO quarter_test_data (test_id, description, timestamp_val, expected_quarter) VALUES ('TC023', 'Boundary Q1 End TIMESTAMP', '2023-03-31 23:59:59', 1);
+INSERT INTO quarter_test_data (test_id, description, timestamp_val, expected_quarter) VALUES ('TC024a', 'Boundary Q2 Start TIMESTAMP', '2023-04-01 00:00:00', 2);
+INSERT INTO quarter_test_data (test_id, description, timestamp_val, expected_quarter) VALUES ('TC024b', 'Boundary Q2 End TIMESTAMP', '2023-06-30 23:59:59', 2);
+INSERT INTO quarter_test_data (test_id, description, timestamp_val, expected_quarter) VALUES ('TC024c', 'Boundary Q3 Start TIMESTAMP', '2023-07-01 00:00:00', 3);
+INSERT INTO quarter_test_data (test_id, description, timestamp_val, expected_quarter) VALUES ('TC024d', 'Boundary Q3 End TIMESTAMP', '2023-09-30 23:59:59', 3);
+INSERT INTO quarter_test_data (test_id, description, timestamp_val, expected_quarter) VALUES ('TC024e', 'Boundary Q4 Start TIMESTAMP', '2023-10-01 00:00:00', 4);
+INSERT INTO quarter_test_data (test_id, description, timestamp_val, expected_quarter) VALUES ('TC024f', 'Boundary Q4 End TIMESTAMP', '2023-12-31 23:59:59', 4);
+
+--echo Invalid Data Type and NULL Value Inserts (Already Single Line)
+INSERT INTO quarter_test_data (test_id, description, int_val) VALUES ('TC029', 'Input integer', 123);
+INSERT INTO quarter_test_data (test_id, description, string_val) VALUES ('TC030', 'Input raw string (not cast to date)', '2023-05-12');
+INSERT INTO quarter_test_data (test_id, description, float_val) VALUES ('TC031', 'Input float', 123.45);
+INSERT INTO quarter_test_data (test_id, description, bool_val) VALUES ('TC032', 'Input boolean', TRUE);
+INSERT INTO quarter_test_data (test_id, description, date_val) VALUES ('TC033a', 'Input NULL in DATE column', NULL);
+INSERT INTO quarter_test_data (test_id, description, timestamp_val) VALUES ('TC033b', 'Input NULL in TIMESTAMP column', NULL);
+
+--echo SELECT Statements for Testing (Remain as they are)
+SELECT test_id, description, QUARTER(date_val) AS actual_quarter, expected_quarter FROM quarter_test_data WHERE date_val IS NOT NULL AND expected_quarter IS NOT NULL ORDER BY test_id;
+SELECT test_id, description, QUARTER(timestamp_val) AS actual_quarter, expected_quarter FROM quarter_test_data WHERE timestamp_val IS NOT NULL AND expected_quarter IS NOT NULL ORDER BY test_id;
+
+--echo SELECT Statements for Testing (Remain as they are)
+--error ER_UNKNOWN_ERROR
+SELECT test_id, description, QUARTER(int_val) AS actual_result FROM quarter_test_data WHERE test_id = 'TC029';
+--error ER_UNKNOWN_ERROR
+SELECT test_id, description, QUARTER(string_val) AS actual_result FROM quarter_test_data WHERE test_id = 'TC030';
+--error ER_UNKNOWN_ERROR
+SELECT test_id, description, QUARTER(float_val) AS actual_result FROM quarter_test_data WHERE test_id = 'TC031';
+--error ER_UNKNOWN_ERROR
+SELECT test_id, description, QUARTER(bool_val) AS actual_result FROM quarter_test_data WHERE test_id = 'TC032';
+
+--error ER_UNKNOWN_ERROR
+SELECT test_id, description, QUARTER(date_val) AS actual_result FROM quarter_test_data WHERE test_id = 'TC033a';
+--error ER_UNKNOWN_ERROR
+SELECT test_id, description, QUARTER(timestamp_val) AS actual_result FROM quarter_test_data WHERE test_id = 'TC033b';
+--error ER_UNKNOWN_ERROR
+SELECT 'TC033_direct' AS test_id, 'Input actual NULL literal' AS description, QUARTER(NULL) AS actual_result;
+--error ER_UNKNOWN_ERROR
+SELECT 'TC034_direct' AS test_id, 'Input CAST(NULL AS DATE) literal' AS description, QUARTER(CAST(NULL AS DATE)) AS actual_result;
+--error ER_UNKNOWN_ERROR
+SELECT 'TC035_direct' AS test_id, 'Input CAST(NULL AS TIMESTAMP) literal' AS description, QUARTER(CAST(NULL AS TIMESTAMP)) AS actual_result;
+--error ER_UNKNOWN_ERROR
+SELECT 'TC036' AS test_id, 'Invalid DATE literal (month > 12)' AS description, QUARTER(DATE '2023-13-01') AS actual_result;
+--error ER_UNKNOWN_ERROR
+SELECT 'TC037' AS test_id, 'Invalid DATE literal (day out of range for month)' AS description, QUARTER(DATE '2023-02-30') AS actual_result;
+--error ER_UNKNOWN_ERROR
+SELECT 'TC038' AS test_id, 'Invalid TIMESTAMP literal (hour > 23)' AS description, QUARTER(CAST('2023-05-12 25:00:00' AS TIMESTAMP)) AS actual_result;
+--error ER_UNKNOWN_ERROR
+SELECT 'TC039' AS test_id, 'Invalid TIMESTAMP literal (minute > 59)' AS description, QUARTER(CAST('2023-05-12 10:70:00' AS TIMESTAMP)) AS actual_result;
+
+--echo
+--echo -- 有效的 DATE 类型输入
+SELECT 'TC_DIRECT_DATE_01: Q1 Start' AS TestCase, QUARTER(DATE '2024-01-01') AS res;
+SELECT 'TC_DIRECT_DATE_02: Q1 Mid' AS TestCase, QUARTER(DATE '2024-02-15') AS res;
+SELECT 'TC_DIRECT_DATE_03: Q1 End' AS TestCase, QUARTER(DATE '2024-03-31') AS res;
+SELECT 'TC_DIRECT_DATE_04: Q2 Start' AS TestCase, QUARTER(DATE '2024-04-01') AS res;
+SELECT 'TC_DIRECT_DATE_05: Q2 Mid' AS TestCase, QUARTER(DATE '2024-05-20') AS res;
+SELECT 'TC_DIRECT_DATE_06: Q2 End' AS TestCase, QUARTER(DATE '2024-06-30') AS res;
+SELECT 'TC_DIRECT_DATE_07: Q3 Start' AS TestCase, QUARTER(DATE '2024-07-01') AS res;
+SELECT 'TC_DIRECT_DATE_08: Q3 Mid' AS TestCase, QUARTER(DATE '2024-08-10') AS res;
+SELECT 'TC_DIRECT_DATE_09: Q3 End' AS TestCase, QUARTER(DATE '2024-09-30') AS res;
+SELECT 'TC_DIRECT_DATE_10: Q4 Start' AS TestCase, QUARTER(DATE '2024-10-01') AS res;
+SELECT 'TC_DIRECT_DATE_11: Q4 Mid' AS TestCase, QUARTER(DATE '2024-11-25') AS res;
+SELECT 'TC_DIRECT_DATE_12: Q4 End' AS TestCase, QUARTER(DATE '2024-12-31') AS res;
+SELECT 'TC_DIRECT_DATE_13: Leap Day (2024 is a leap year)' AS TestCase, QUARTER(DATE '2024-02-29') AS res;
+SELECT 'TC_DIRECT_DATE_14: Non-Leap Day (2023 is not a leap year)' AS TestCase, QUARTER(DATE '2023-03-01') AS res;
+
+
+--echo -- 有效的 TIMESTAMP 类型输入
+--echo -- 注意: TIMESTAMP 'YYYY-MM-DD HH:MM:SS' 是标准SQL语法。
+--echo -- 如果您的MySQL版本较老或特定配置不支持，也可尝试 CAST('YYYY-MM-DD HH:MM:SS' AS TIMESTAMP) 或直接使用字符串 'YYYY-MM-DD HH:MM:SS' (MySQL通常会隐式转换)
+SELECT 'TC_DIRECT_TS_01: Q1 Timestamp' AS TestCase, QUARTER(TIMESTAMP '2024-01-15 10:30:45') AS res;
+SELECT 'TC_DIRECT_TS_02: Q2 Timestamp' AS TestCase, QUARTER(TIMESTAMP '2024-04-05 00:00:01') AS res;
+SELECT 'TC_DIRECT_TS_03: Q3 Timestamp' AS TestCase, QUARTER(TIMESTAMP '2024-09-29 23:59:58') AS res;
+SELECT 'TC_DIRECT_TS_04: Q4 Timestamp' AS TestCase, QUARTER(TIMESTAMP '2024-10-01 12:15:30') AS res;
+SELECT 'TC_DIRECT_TS_05: Q4 End of Year Timestamp' AS TestCase, QUARTER(TIMESTAMP '2024-12-31 23:59:59') AS res;

@@ -52,27 +52,21 @@ By default, it connects to the TiDB/MySQL server at `127.0.0.1:4000` with `root`
 ./mysql-tester example1 example2   example3 # seperate different tests with one or more spaces
 # modify current example cases for .result output.
 ./mysql-tester -record=1 -check-error=1
-
+./mysql-tester -record=1 -host=127.0.0.1 -port=3306 -user=root -passwd=123456
 ```
 
 For more details about how to run and write test cases, see the [Wiki](https://github.com/pingcap/mysql-tester/wiki) page.
 
-## Contributing
+## 生成测试报告
 
-Contributions are welcomed and greatly appreciated. You can help by:
+使用以下命令可以生成 JUnit XML 格式的测试报告：
 
-- writing user document about how to use this framework
-- triaging issues
-- submitting new test cases
-- fixing bugs of this test framework
-- adding features that mysql test has but this implementation does not
-- ...
+```sh
+./mysql-tester --report --junit-results-dir=./junit-results [测试文件]
+```
 
-In case you have any problem, discuss with us in the [tidbcommunity](https://join.slack.com/t/tidbcommunity/shared_invite/enQtNzc0MzI4ODExMDc4LWYwYmIzMjZkYzJiNDUxMmZlN2FiMGJkZjAyMzQ5NGU0NGY0NzI3NTYwMjAyNGQ1N2I2ZjAxNzc1OGUwYWM0NzE) slack workspace.
+allure generate junit-results -o ./allure-output --clean
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
+allure open allure-output
 
-## License
-
-MySQL Tester is under the Apache 2.0 license. See the [LICENSE](./LICENSE) file for details.
-
+ ./mysql-tester -record=1 -host=172.30.14.172 -port=3307 -user=root -passwd=123123 quickbi/interval

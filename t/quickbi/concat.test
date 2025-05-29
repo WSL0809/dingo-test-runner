@@ -1,0 +1,126 @@
+SELECT CONCAT('Hello','World!');
+
+SELECT CONCAT('Hello',' ','World!');
+
+SELECT CONCAT ('hello',-9223372036854775808,9223372036854775807);
+
+SELECT CONCAT('Hello', ', ', 'World!@#$%^&*()');
+
+SELECT CONCAT('你好', '，', '世界');
+
+--echo
+--echo --不同位置的NULL值
+SELECT CONCAT(NULL, 'Hello', 'World');
+SELECT CONCAT('Hello', NULL, 'World');
+SELECT CONCAT('Hello', 'World', NULL);
+
+--echo
+--echo --多个NULL值
+SELECT CONCAT(NULL, NULL, 'World');
+
+--echo
+--echo -- 空字符串组合
+SELECT CONCAT('', '', '');
+SELECT CONCAT('Hello', '', 'World');
+
+--echo
+--echo -- 数字类型
+SELECT CONCAT('Number: ', 123, ' is integer');
+SELECT CONCAT(1.23, 4.56, 7.89);
+
+--echo
+--echo -- 日期类型
+SELECT CONCAT('Today is ', CURDATE(), ' have a nice day');
+
+--echo
+--echo -- 布尔值
+SELECT CONCAT('This is ', TRUE, ' statement');
+
+--echo
+--echo 长字符串
+SELECT CONCAT(REPEAT('A', 1000), REPEAT('B', 1000), REPEAT('C', 1000));
+
+
+--echo
+--echo -- 科学计数法
+SELECT CONCAT('科学计数: ', 1.23E-10, ' 示例');
+
+--echo
+--echo -- 表达式
+SELECT CONCAT('计算结果: ', 10+20, ' 单位');
+
+--echo
+--echo -- 函数嵌套
+SELECT CONCAT(UPPER('hello'), ' ', LOWER('WORLD'));
+
+DROP TABLE IF EXISTS test_data;
+
+CREATE TABLE test_data (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    col_varchar1 VARCHAR(50),
+    col_varchar2 VARCHAR(50),
+    col_text TEXT,
+    col_int INT,
+    col_decimal DECIMAL(10, 2),
+    col_date DATE,
+    col_nullable_varchar VARCHAR(50)
+);
+
+INSERT INTO test_data (col_varchar1, col_varchar2, col_text, col_int, col_decimal, col_date, col_nullable_varchar) VALUES
+('Hello', 'World', 'This is text.', 123, 45.67, '2023-10-27', 'Value1'),
+('你好', '世界', '这是文本。', -99, 0.99, '2024-01-01', NULL),
+('', 'NotEmpty', 'Empty Varchar1', 0, 0.00, CURDATE(), ''),
+('String with space', ' another ', ' and text ', 1000, 1234.56, '1999-12-31', 'Value2'),
+('Long String A...', 'Long String B...', REPEAT('X', 500), 98765, 100.00, '2023-11-11', 'Long Text Related');
+
+--echo
+--echo -- 连接三个 varchar
+SELECT id, CONCAT(col_varchar1, ' ', col_varchar2) AS concatenated_string FROM test_data;
+
+--echo
+--echo -- 连接两个 varchar 和一个 text
+SELECT id, CONCAT(col_varchar1, ' | ', col_text) AS mixed_string_concat FROM test_data;
+
+--echo
+--echo --包含 NULL 值的列
+SELECT id, CONCAT(col_varchar1, col_nullable_varchar, col_varchar2) AS concat_with_null FROM test_data;
+
+--echo
+--echo -- 包含空字符串的列
+SELECT id, CONCAT('Prefix-', col_varchar1, '-Suffix') AS concat_with_empty FROM test_data WHERE id = 3;
+
+
+--echo
+--echo --连接字符串列和数字/日期列，观察隐式类型转换。
+--echo --连接 Varchar, INT, DECIMAL
+SELECT id, CONCAT(col_varchar1, col_int, col_decimal) AS concat_mixed_types1
+FROM test_data;
+
+--echo
+--echo --连接 Varchar, DATE
+SELECT id, CONCAT( col_date, ' | Text: ', col_varchar2) AS concat_mixed_types2
+FROM test_data;
+
+--echo
+--echo -- 特殊字符
+SELECT id, CONCAT(col_varchar1, ' <-> ', col_nullable_varchar) AS concat_special_chars
+FROM test_data
+WHERE id = 5;
+
+--echo
+--echo -- 使用 IFNULL 提供默认值。
+SELECT id, CONCAT(col_varchar1, IFNULL(col_nullable_varchar, '<N/A>'), col_varchar2) AS concat_null_handled
+FROM test_data;
+
+SELECT id, LENGTH(CONCAT(col_text, col_varchar1, col_varchar2)) AS result_length
+FROM test_data
+WHERE id = 5;
+
+
+--echo
+--echo --concat 在 where 子句
+SELECT * FROM test_data WHERE CONCAT(col_varchar1, col_varchar2, col_text) = 'HelloWorldThis is text.';
+
+--echo
+--echo --concat 在 order by 子句
+SELECT col_int, col_decimal, col_date FROM test_data ORDER BY CONCAT(col_int, col_decimal, col_date);
