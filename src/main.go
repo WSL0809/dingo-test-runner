@@ -986,7 +986,7 @@ func (t *tester) executeStmt(query string) error {
 	if err != nil {
 		return errors.Trace(err)
 	}
-
+	defer raw.Close()
 	rows, err := dumpToByteRows(raw)
 	if err != nil {
 		return errors.Trace(err)
