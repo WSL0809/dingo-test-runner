@@ -20,6 +20,3 @@ tidy:
 clean:
 	$(GO) clean -i ./...
 	rm -rf mysql-tester
-
-gen_perror: generate_perror/main.go
-	$(GO) build -o gen_perror ./generate_perror

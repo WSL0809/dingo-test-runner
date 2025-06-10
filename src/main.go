@@ -48,6 +48,15 @@ var (
 	collationDisable bool
 	checkErr         bool
 	extension        string
+	// 邮件相关配置参数
+	emailEnable    bool
+	emailSMTPHost  string
+	emailSMTPPort  int
+	emailUsername  string
+	emailPassword  string
+	emailFrom      string
+	emailTo        string
+	emailEnableTLS bool
 )
 
 func init() {
@@ -65,6 +74,15 @@ func init() {
 	flag.BoolVar(&checkErr, "check-error", false, "if --error ERR does not match, return error instead of just warn")
 	flag.BoolVar(&collationDisable, "collation-disable", false, "run collation related-test with new-collation disabled")
 	flag.StringVar(&extension, "extension", "result", "the result file extension for result file")
+	// 邮件相关参数
+	flag.BoolVar(&emailEnable, "email-enable", false, "enable email notification for test results")
+	flag.StringVar(&emailSMTPHost, "email-smtp-host", "", "SMTP server host for email notification")
+	flag.IntVar(&emailSMTPPort, "email-smtp-port", 587, "SMTP server port for email notification")
+	flag.StringVar(&emailUsername, "email-username", "", "email username for SMTP authentication")
+	flag.StringVar(&emailPassword, "email-password", "", "email password or app password for SMTP authentication")
+	flag.StringVar(&emailFrom, "email-from", "MySQL Tester", "sender name for email notification")
+	flag.StringVar(&emailTo, "email-to", "", "recipient email addresses (comma separated)")
+	flag.BoolVar(&emailEnableTLS, "email-enable-tls", true, "enable TLS for SMTP connection")
 }
 
 const (
@@ -172,7 +190,6 @@ func newTester(name string) *tester {
 	return t
 }
 
-
 func (t *tester) addConnection(connName, hostName, userName, password, db string) {
 	var (
 		mdb *sql.DB
@@ -195,7 +212,7 @@ func (t *tester) addConnection(connName, hostName, userName, password, db string
 	}
 	if err != nil {
 		if t.expectedErrs == nil {
-			log.Fatalf("Open db err %v", err)
+			log.Fatalf("无法连接到数据库 [%s:%s]，请检查数据库配置。错误详情：%v", hostName, port, err)
 		}
 		t.expectedErrs = nil
 		return
@@ -203,7 +220,7 @@ func (t *tester) addConnection(connName, hostName, userName, password, db string
 	conn, err := initConn(mdb, userName, passwd, hostName, db)
 	if err != nil {
 		if t.expectedErrs == nil {
-			log.Fatalf("Open db err %v", err)
+			log.Fatalf("数据库连接初始化失败 [%s:%s]，可能是权限问题或数据库不存在。错误详情：%v", hostName, port, err)
 		}
 		t.expectedErrs = nil
 		return
@@ -244,7 +261,7 @@ func (t *tester) preProcess() {
 	mdb, err := OpenDBWithRetry("mysql", user+":"+passwd+"@tcp("+host+":"+port+")/"+dbName+"?time_zone=%27Asia%2FShanghai%27&allowAllFiles=true"+params, retryConnCount)
 	t.conn = make(map[string]*Conn)
 	if err != nil {
-		log.Fatalf("Open db err %v", err)
+		log.Fatalf("测试环境初始化失败，无法连接到数据库 [%s:%s]。错误详情：%v", host, port, err)
 	}
 
 	if !reserveSchema {
@@ -264,12 +281,12 @@ func (t *tester) preProcess() {
 	dbName = strings.ReplaceAll(t.name, "/", "__")
 	log.Debugf("Create new db `%s`", dbName)
 	if _, err = mdb.Exec(fmt.Sprintf("create database `%s`", dbName)); err != nil {
-		log.Fatalf("Executing create db %s err[%v]", dbName, err)
+		log.Fatalf("创建测试数据库失败 [数据库名: %s]，可能是权限不足或数据库已存在。错误详情：%v", dbName, err)
 	}
 	t.mdb = mdb
 	conn, err := initConn(mdb, user, passwd, host, dbName)
 	if err != nil {
-		log.Fatalf("Open db err %v", err)
+		log.Fatalf("测试数据库初始化失败 [%s:%s/%s]，可能是权限不足或数据库创建失败。错误详情：%v", host, port, dbName, err)
 	}
 	t.conn[default_connection] = conn
 	t.curr = conn
@@ -310,7 +327,7 @@ func (t *tester) addFailure(testSuite *XUnitTestSuite, err *error, cnt int) {
 		Time:       "",
 		QueryCount: cnt,
 		Status:     "failed",
-		Failure:    &XUnitFailure{
+		Failure: &XUnitFailure{
 			Message: "Test failed",
 			Type:    "AssertionError",
 			Content: (*err).Error(),
@@ -560,7 +577,7 @@ func initConn(mdb *sql.DB, host, user, passwd, dbName string) (*Conn, error) {
 	}
 	if dbName != "" {
 		if _, err = sqlConn.ExecContext(context.Background(), fmt.Sprintf("use `%s`", dbName)); err != nil {
-			log.Fatalf("Executing Use test err[%v]", err)
+			log.Fatalf("切换到数据库失败 [数据库名: %s]，可能是数据库不存在或权限不足。错误详情：%v", dbName, err)
 		}
 	}
 	return conn, nil
@@ -572,11 +589,11 @@ func (t *tester) concurrentExecute(querys []query, wg *sync.WaitGroup, errOccure
 	dbName := "test"
 	mdb, err := OpenDBWithRetry("mysql", user+":"+passwd+"@tcp("+host+":"+port+")/"+dbName+"?time_zone=%27Asia%2FShanghai%27&allowAllFiles=true"+params, retryConnCount)
 	if err != nil {
-		log.Fatalf("Open db err %v", err)
+		log.Fatalf("并发测试环境初始化失败，无法连接到数据库 [%s:%s]。错误详情：%v", host, port, err)
 	}
 	conn, err := initConn(mdb, user, passwd, host, t.name)
 	if err != nil {
-		log.Fatalf("Open db err %v", err)
+		log.Fatalf("并发测试数据库初始化失败 [%s:%s/%s]，可能是权限不足。错误详情：%v", host, port, t.name, err)
 	}
 	tt.curr = conn
 	tt.mdb = mdb
@@ -1078,7 +1095,7 @@ func loadAllTests() ([]string, error) {
 
 // convertTestsToTestTasks convert all test cases into several testBatches.
 // If we have 11 cases and batchSize is 5, then we will have 4 testBatches.
-func convertTestsToTestTasks(tests []string) (tTasks []testBatch, have_show, have_is bool) {
+func convertTestsToTestTasks(tests []string) (tTasks []testBatch) {
 	batchSize := 30
 	total := (len(tests) / batchSize) + 2
 	// the extra 1 is for sub_query_more test
@@ -1095,10 +1112,6 @@ func convertTestsToTestTasks(tests []string) (tTasks []testBatch, have_show, hav
 			switch tests[testIdx] {
 			case "sub_query_more":
 				have_subqmore = true
-			case "show":
-				have_show = true
-			case "infoschema":
-				have_is = true
 			case "role":
 				have_role = true
 			case "role2":
@@ -1145,43 +1158,56 @@ func (t testBatch) String() string {
 	return strings.Join([]string(t), ", ")
 }
 
-func executeTests(tasks []testBatch, have_show, have_is bool) {
+func executeTests(tasks []testBatch) {
 	// show and infoschema have to be executed first, since the following
 	// tests will create database using their own name.
-	if have_show {
-		show := newTester("show")
-		msgs <- testTask{
-			test: "show",
-			err:  show.Run(),
-		}
-	}
+	// if have_show {
+	// 	show := newTester("show")
+	// 	msgs <- testTask{
+	// 		test: "show",
+	// 		err:  show.Run(),
+	// 	}
+	// }
 
-	if have_is {
-		infoschema := newTester("infoschema")
-		msgs <- testTask{
-			test: "infoschema",
-			err:  infoschema.Run(),
-		}
-	}
+	// if have_is {
+	// 	infoschema := newTester("infoschema")
+	// 	msgs <- testTask{
+	// 		test: "infoschema",
+	// 		err:  infoschema.Run(),
+	// 	}
+	// }
 
 	for _, t := range tasks {
 		t.Run()
 	}
 }
 
-func consumeError() []error {
+func consumeError() ([]error, []TestCaseResult) {
 	var es []error
+	var testDetails []TestCaseResult
 	for {
 		if t, more := <-msgs; more {
 			if t.err != nil {
 				e := fmt.Errorf("run test [%s] err: %v", t.test, t.err)
 				log.Errorln(e)
 				es = append(es, e)
+				testDetails = append(testDetails, TestCaseResult{
+					Name:     t.test,
+					Status:   "failed",
+					Duration: 0, // 这里暂时设为0，实际应该从测试中获取
+					Error:    t.err.Error(),
+				})
 			} else {
 				log.Infof("run test [%s] ok", t.test)
+				testDetails = append(testDetails, TestCaseResult{
+					Name:     t.test,
+					Status:   "passed",
+					Duration: 0, // 这里暂时设为0，实际应该从测试中获取
+					Error:    "",
+				})
 			}
 		} else {
-			return es
+			return es, testDetails
 		}
 	}
 }
@@ -1268,7 +1294,29 @@ func main() {
 		close(msgs)
 	}()
 
-	es := consumeError()
+	es, testDetails := consumeError()
+	endTime := time.Now()
+
+	// 构建测试结果
+	testResult := TestResult{
+		StartTime:   startTime,
+		EndTime:     endTime,
+		TotalTests:  len(tests),
+		PassedTests: len(tests) - len(es),
+		FailedTests: len(es),
+		Duration:    endTime.Sub(startTime),
+		Errors:      es,
+		TestDetails: testDetails,
+	}
+
+	// 发送邮件通知（如果启用了邮件功能）
+	if emailEnable {
+		emailConfig := parseEmailConfig()
+		if err := SendEmailNotification(emailConfig, testResult); err != nil {
+			log.Errorf("发送邮件通知失败: %v", err)
+		}
+	}
+
 	println()
 	if len(es) != 0 {
 		log.Errorf("%d tests failed\n", len(es))

@@ -15,6 +15,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -28,11 +29,29 @@ import (
 func OpenDBWithRetry(driverName, dataSourceName string, retryCount int) (mdb *sql.DB, err error) {
 	startTime := time.Now()
 	sleepTime := time.Millisecond * 500
+	// Parse DSN to extract connection info for better error messages
+	var host, port, dbname string
+	if parts := strings.Split(dataSourceName, "@tcp("); len(parts) > 1 {
+		if hostParts := strings.Split(parts[1], ")"); len(hostParts) > 0 {
+			hostPort := strings.Split(hostParts[0], ":")
+			if len(hostPort) >= 2 {
+				host = hostPort[0]
+				port = hostPort[1]
+			}
+		}
+	}
+	if parts := strings.Split(dataSourceName, ")/"); len(parts) > 1 {
+		dbParts := strings.Split(parts[1], "?")
+		if len(dbParts) > 0 {
+			dbname = dbParts[0]
+		}
+	}
+
 	// The max retry interval is 60 s.
 	for i := 0; i < retryCount; i++ {
 		mdb, err = sql.Open(driverName, dataSourceName)
 		if err != nil {
-			log.Warnf("open db failed, retry count %d (remain %d) err %v", i, retryCount-i, err)
+			log.Warnf("第 %d 次尝试连接数据库失败，还剩 %d 次重试，错误：%v", i+1, retryCount-i-1, err)
 			time.Sleep(sleepTime)
 			continue
 		}
@@ -40,13 +59,30 @@ func OpenDBWithRetry(driverName, dataSourceName string, retryCount int) (mdb *sq
 		if err == nil {
 			break
 		}
-		log.Warnf("ping db failed, retry count %d (remain %d) err %v", i, retryCount-i, err)
+		log.Warnf("第 %d 次尝试ping数据库失败，还剩 %d 次重试，错误：%v", i+1, retryCount-i-1, err)
 		mdb.Close()
 		time.Sleep(sleepTime)
 	}
 	if err != nil {
-		log.Errorf("open db failed %v, take time %v", err, time.Since(startTime))
-		return nil, errors.Trace(err)
+		// Provide user-friendly error message
+		var friendlyMsg strings.Builder
+		friendlyMsg.WriteString("数据库连接失败，请检查以下配置：\n")
+		if host != "" && port != "" {
+			friendlyMsg.WriteString(fmt.Sprintf("  - 主机地址: %s\n", host))
+			friendlyMsg.WriteString(fmt.Sprintf("  - 端口: %s\n", port))
+		}
+		if dbname != "" {
+			friendlyMsg.WriteString(fmt.Sprintf("  - 数据库名: %s\n", dbname))
+		}
+		friendlyMsg.WriteString("  - 请确认数据库服务是否启动\n")
+		friendlyMsg.WriteString("  - 请确认网络连接是否正常\n")
+		friendlyMsg.WriteString("  - 请确认用户名和密码是否正确\n")
+		friendlyMsg.WriteString("  - 请确认防火墙设置是否阻止连接\n")
+		friendlyMsg.WriteString(fmt.Sprintf("\n总耗时: %v，重试次数: %d\n", time.Since(startTime), retryCount))
+		friendlyMsg.WriteString(fmt.Sprintf("底层错误: %v", err))
+
+		log.Errorf(friendlyMsg.String())
+		return nil, errors.Trace(errors.Errorf("数据库连接失败: %v", err))
 	}
 
 	return

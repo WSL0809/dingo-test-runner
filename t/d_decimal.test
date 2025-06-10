@@ -1,0 +1,235 @@
+drop table if exists test_decimal_definition;
+CREATE TABLE test_decimal_definition (
+    id INT PRIMARY KEY,
+    col1 DECIMAL,
+    col2 DECIMAL(5,2),
+    col3 DECIMAL(10,5),
+    col4 DECIMAL(20,10),
+    col5 DECIMAL(65,30),
+    col6 DECIMAL(1,0),
+    col7 DECIMAL(1,1)
+);
+
+
+# 测试用例 3：正常值插入
+drop table if exists test_decimal_insert;
+CREATE TABLE test_decimal_insert (
+    id INT PRIMARY KEY,
+    price DECIMAL(10,2),
+    quantity DECIMAL(8,3),
+    rate DECIMAL(5,4)
+);
+
+# 插入正常值
+INSERT INTO test_decimal_insert VALUES 
+(1, 123.45, 100.500, 0.9876),
+(2, 999999.99, 99999.999, 9.9999),
+(3, -123.45, -100.500, -0.9876),
+(4, 0, 0, 0),
+(5, 0.01, 0.001, 0.0001);
+
+# 测试用例 4：边界值插入
+INSERT INTO test_decimal_insert VALUES 
+(6, 99999999.99, 99999.999, 9.9999),
+(7, -99999999.99, -99999.999, -9.9999);
+
+# 测试用例 5：超出范围值插入（应该失败或截断）
+INSERT INTO test_decimal_insert VALUES 
+(8, 100000000.00, 100000.000, 10.0000);
+
+# 测试用例 6：精度截断测试
+INSERT INTO test_decimal_insert VALUES 
+(9, 123.456, 100.5555, 0.98765);
+
+select * from test_decimal_insert;
+
+# 创建测试表
+drop table if exists test_decimal_calc;
+CREATE TABLE test_decimal_calc (
+    id INT PRIMARY KEY,
+    val1 DECIMAL(10,2),
+    val2 DECIMAL(10,2),
+    val3 DECIMAL(20,5)
+);
+
+INSERT INTO test_decimal_calc VALUES 
+(1, 100.50, 50.25, 1000.12345),
+(2, 999.99, 0.01, 99999.99999),
+(3, -50.50, 25.25, -1000.50000),
+(4, 0.01, 0.01, 0.00001);
+
+# 测试用例 7：加法运算
+SELECT 
+    id,
+    val1 + val2 as sum_result,
+    val1 + val3 as sum_diff_precision,
+    val1 + 100 as sum_with_int,
+    val1 + 50.555 as sum_with_float
+FROM test_decimal_calc;
+
+# 测试用例 8：减法运算
+SELECT 
+    id,
+    val1 - val2 as sub_result,
+    val1 - val3 as sub_diff_precision,
+    val2 - val1 as sub_negative
+FROM test_decimal_calc;
+
+# 测试用例 9：乘法运算
+SELECT 
+    id,
+    val1 * val2 as mul_result,
+    val1 * 2 as mul_with_int,
+    val1 * 0.1 as mul_with_float,
+    val1 * 0 as mul_with_zero
+FROM test_decimal_calc;
+
+# 测试用例 10：除法运算
+SELECT 
+    id,
+    val1 / val2 as div_result,
+    val1 / 2 as div_with_int,
+    val3 / val1 as div_precision,
+    val1 / 0 as div_by_zero
+FROM test_decimal_calc WHERE val2 != 0;
+
+# 测试用例 11：取模运算
+SELECT 
+    id,
+    val1 % val2 as mod_result,
+    val1 % 10 as mod_with_int
+FROM test_decimal_calc WHERE val2 != 0;
+
+# 测试用例 12：SUM 函数
+SELECT 
+    SUM(val1) as sum_val1,
+    SUM(val2) as sum_val2,
+    SUM(val3) as sum_val3
+FROM test_decimal_calc;
+
+# 测试用例 13：AVG 函数
+SELECT 
+    AVG(val1) as avg_val1,
+    AVG(val2) as avg_val2,
+    AVG(val3) as avg_val3
+FROM test_decimal_calc;
+
+# 测试用例 14：MIN/MAX 函数
+SELECT 
+    MIN(val1) as min_val1,
+    MAX(val1) as max_val1,
+    MIN(val3) as min_val3,
+    MAX(val3) as max_val3
+FROM test_decimal_calc;
+
+# 测试用例 15：COUNT 函数
+SELECT 
+    COUNT(val1) as count_val1,
+    COUNT(DISTINCT val1) as count_distinct_val1
+FROM test_decimal_calc;
+
+# 测试用例 16：GROUP BY 测试
+drop table if exists test_decimal_group;
+CREATE TABLE test_decimal_group (
+    category VARCHAR(10),
+    amount DECIMAL(10,2)
+);
+
+INSERT INTO test_decimal_group VALUES 
+('A', 100.50), ('A', 200.75), ('A', 300.25),
+('B', 150.00), ('B', 250.50), ('B', 350.00);
+
+SELECT 
+    category,
+    SUM(amount) as total,
+    AVG(amount) as average,
+    MIN(amount) as minimum,
+    MAX(amount) as maximum
+FROM test_decimal_group
+GROUP BY category;
+
+--echo 索引测试
+drop table if exists test_where_conditions;
+# 创建测试表，包含各种索引配置
+CREATE TABLE test_where_conditions (
+    id INT PRIMARY KEY,
+    d_normal DECIMAL(10,2),
+    d_indexed DECIMAL(10,2),
+    d_unique DECIMAL(10,2),
+    d_composite1 DECIMAL(10,2),
+    d_composite2 DECIMAL(10,2),
+    INDEX idx_indexed (d_indexed),
+    UNIQUE INDEX uk_unique (d_unique),
+    INDEX idx_composite (d_composite1, d_composite2)
+);
+
+# 插入测试数据
+INSERT INTO test_where_conditions VALUES 
+(1, 100.00, 100.00, 100.00, 100.00, 200.00);
+INSERT INTO test_where_conditions VALUES
+(2, 100.01, 100.01, 100.01, 100.00, 200.01);
+INSERT INTO test_where_conditions VALUES
+(3, 100.10, 100.10, 100.10, 100.01, 200.00);
+INSERT INTO test_where_conditions VALUES
+(4, 100.99, 100.99, 100.99, 100.99, 200.99);
+INSERT INTO test_where_conditions VALUES
+(5, 100.02, 100.02, 100.02, 100.02, 200.02);
+INSERT INTO test_where_conditions VALUES
+(6, 100.05, 100.05, 100.05, 100.05, 200.05);
+INSERT INTO test_where_conditions VALUES
+(7, -100.00, -100.00, -100.00, -100.00, -200.00);
+INSERT INTO test_where_conditions VALUES
+(8, 0.00, 0.00, 1000.00, 0.00, 0.00);
+INSERT INTO test_where_conditions VALUES
+(9, NULL, 100.00, 2000.00, 100.00, 100.00);
+
+# 测试精确匹配
+SELECT 'Test 1: 精确匹配 - 无索引字段' as test_case;
+SELECT * FROM test_where_conditions WHERE d_normal = 100.00;
+SELECT * FROM test_where_conditions WHERE d_normal = 100.000;
+SELECT * FROM test_where_conditions WHERE d_normal = 100;
+SELECT * FROM test_where_conditions WHERE d_normal = 100.0;
+--error
+SELECT * FROM test_where_conditions WHERE d_normal = '100.00';
+--error
+SELECT * FROM test_where_conditions WHERE d_normal = '100';
+
+SELECT 'Test 2: 精确匹配 - 有索引字段' as test_case;
+describe SELECT * FROM test_where_conditions WHERE d_indexed = 100.00;
+SELECT * FROM test_where_conditions WHERE d_indexed = 100.00;
+SELECT * FROM test_where_conditions WHERE d_indexed = 100.004;
+SELECT * FROM test_where_conditions WHERE d_indexed = 100.005;
+
+# 测试不等比较
+SELECT 'Test 3: 不等比较' as test_case;
+SELECT * FROM test_where_conditions WHERE d_normal != 100.00;
+SELECT * FROM test_where_conditions WHERE NOT d_normal = 100.00;
+SELECT * FROM test_where_conditions WHERE d_indexed != 100.00;
+
+# 测试范围查询
+SELECT 'Test 4: 范围查询' as test_case;
+SELECT * FROM test_where_conditions WHERE d_normal > 100.00;
+SELECT * FROM test_where_conditions WHERE d_normal >= 100.00;
+SELECT * FROM test_where_conditions WHERE d_normal < 100.00;
+SELECT * FROM test_where_conditions WHERE d_normal <= 100.00;
+SELECT * FROM test_where_conditions WHERE d_normal BETWEEN 100.00 AND 100.10;
+SELECT * FROM test_where_conditions WHERE d_normal NOT BETWEEN 100.00 AND 100.10;
+
+# 测试 NULL 值处理
+SELECT 'Test 5: NULL 值' as test_case;
+SELECT * FROM test_where_conditions WHERE d_normal IS NULL;
+SELECT * FROM test_where_conditions WHERE d_normal IS NOT NULL;
+SELECT * FROM test_where_conditions WHERE d_normal = NULL;
+
+# 测试Decimal字段插入整数
+drop table if exists test_decimal_insert_int;
+CREATE TABLE test_decimal_insert_int (
+    id INT PRIMARY KEY,
+    d_decimal DECIMAL(10,2)
+);
+
+INSERT INTO test_decimal_insert_int VALUES (1, 100);
+INSERT INTO test_decimal_insert_int VALUES (2, 100.00);
+INSERT INTO test_decimal_insert_int VALUES (3, 100.000);
+
+SELECT * FROM test_decimal_insert_int;

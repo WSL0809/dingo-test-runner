@@ -1,0 +1,322 @@
+drop table if exists test_decimal_definition;
+CREATE TABLE test_decimal_definition (
+id INT PRIMARY KEY,
+col1 DECIMAL,
+col2 DECIMAL(5,2),
+col3 DECIMAL(10,5),
+col4 DECIMAL(20,10),
+col5 DECIMAL(65,30),
+col6 DECIMAL(1,0),
+col7 DECIMAL(1,1)
+);
+drop table if exists test_decimal_insert;
+CREATE TABLE test_decimal_insert (
+id INT PRIMARY KEY,
+price DECIMAL(10,2),
+quantity DECIMAL(8,3),
+rate DECIMAL(5,4)
+);
+INSERT INTO test_decimal_insert VALUES
+(1, 123.45, 100.500, 0.9876),
+(2, 999999.99, 99999.999, 9.9999),
+(3, -123.45, -100.500, -0.9876),
+(4, 0, 0, 0),
+(5, 0.01, 0.001, 0.0001);
+INSERT INTO test_decimal_insert VALUES
+(6, 99999999.99, 99999.999, 9.9999),
+(7, -99999999.99, -99999.999, -9.9999);
+INSERT INTO test_decimal_insert VALUES
+(8, 100000000.00, 100000.000, 10.0000);
+INSERT INTO test_decimal_insert VALUES
+(9, 123.456, 100.5555, 0.98765);
+select * from test_decimal_insert;
+id	price	quantity	rate
+1	123.45	100.500	0.9876
+2	999999.99	99999.999	9.9999
+3	-123.45	-100.500	-0.9876
+4	0.00	0.000	0.0000
+5	0.01	0.001	0.0001
+6	99999999.99	99999.999	9.9999
+7	-99999999.99	-99999.999	-9.9999
+8	100000000.00	100000.000	10.0000
+9	123.46	100.556	0.9877
+drop table if exists test_decimal_calc;
+CREATE TABLE test_decimal_calc (
+id INT PRIMARY KEY,
+val1 DECIMAL(10,2),
+val2 DECIMAL(10,2),
+val3 DECIMAL(20,5)
+);
+INSERT INTO test_decimal_calc VALUES
+(1, 100.50, 50.25, 1000.12345),
+(2, 999.99, 0.01, 99999.99999),
+(3, -50.50, 25.25, -1000.50000),
+(4, 0.01, 0.01, 0.00001);
+SELECT
+id,
+val1 + val2 as sum_result,
+val1 + val3 as sum_diff_precision,
+val1 + 100 as sum_with_int,
+val1 + 50.555 as sum_with_float
+FROM test_decimal_calc;
+id	sum_result	sum_diff_precision	sum_with_int	sum_with_float
+1	150.75	1100.62345	200.50	151.055
+2	1000.00	100999.98999	1099.99	1050.545
+3	-25.25	-1051.00000	49.50	0.055
+4	0.02	0.01001	100.01	50.565
+SELECT
+id,
+val1 - val2 as sub_result,
+val1 - val3 as sub_diff_precision,
+val2 - val1 as sub_negative
+FROM test_decimal_calc;
+id	sub_result	sub_diff_precision	sub_negative
+1	50.25	-899.62345	-50.25
+2	999.98	-99000.00999	-999.98
+3	-75.75	950.00000	75.75
+4	0.00	0.00999	0.00
+SELECT
+id,
+val1 * val2 as mul_result,
+val1 * 2 as mul_with_int,
+val1 * 0.1 as mul_with_float,
+val1 * 0 as mul_with_zero
+FROM test_decimal_calc;
+id	mul_result	mul_with_int	mul_with_float	mul_with_zero
+1	5050.1250	201.00	10.050	0.00
+2	9.9999	1999.98	99.999	0.00
+3	-1275.1250	-101.00	-5.050	0.00
+4	0.0001	0.02	0.001	0.00
+SELECT
+id,
+val1 / val2 as div_result,
+val1 / 2 as div_with_int,
+val3 / val1 as div_precision,
+val1 / 0 as div_by_zero
+FROM test_decimal_calc WHERE val2 != 0;
+id	div_result	div_with_int	div_precision	div_by_zero
+1	2.000000	50.250000	9.951477114	NULL
+2	99999.000000	499.995000	100.001000000	NULL
+3	-2.000000	-25.250000	19.811881188	NULL
+4	1.000000	0.005000	0.001000000	NULL
+SELECT
+id,
+val1 % val2 as mod_result,
+val1 % 10 as mod_with_int
+FROM test_decimal_calc WHERE val2 != 0;
+id	mod_result	mod_with_int
+1	0.00	0.50
+2	0.00	9.99
+3	0.00	-0.50
+4	0.00	0.01
+SELECT
+SUM(val1) as sum_val1,
+SUM(val2) as sum_val2,
+SUM(val3) as sum_val3
+FROM test_decimal_calc;
+sum_val1	sum_val2	sum_val3
+1050.00	75.52	99999.62345
+SELECT
+AVG(val1) as avg_val1,
+AVG(val2) as avg_val2,
+AVG(val3) as avg_val3
+FROM test_decimal_calc;
+avg_val1	avg_val2	avg_val3
+262.500000	18.880000	24999.905862500
+SELECT
+MIN(val1) as min_val1,
+MAX(val1) as max_val1,
+MIN(val3) as min_val3,
+MAX(val3) as max_val3
+FROM test_decimal_calc;
+min_val1	max_val1	min_val3	max_val3
+-50.50	999.99	-1000.50000	99999.99999
+SELECT
+COUNT(val1) as count_val1,
+COUNT(DISTINCT val1) as count_distinct_val1
+FROM test_decimal_calc;
+count_val1	count_distinct_val1
+4	4
+drop table if exists test_decimal_group;
+CREATE TABLE test_decimal_group (
+category VARCHAR(10),
+amount DECIMAL(10,2)
+);
+INSERT INTO test_decimal_group VALUES
+('A', 100.50), ('A', 200.75), ('A', 300.25),
+('B', 150.00), ('B', 250.50), ('B', 350.00);
+SELECT
+category,
+SUM(amount) as total,
+AVG(amount) as average,
+MIN(amount) as minimum,
+MAX(amount) as maximum
+FROM test_decimal_group
+GROUP BY category;
+category	total	average	minimum	maximum
+A	601.50	200.500000	100.50	300.25
+B	750.50	250.166667	150.00	350.00
+索引测试
+drop table if exists test_where_conditions;
+CREATE TABLE test_where_conditions (
+id INT PRIMARY KEY,
+d_normal DECIMAL(10,2),
+d_indexed DECIMAL(10,2),
+d_unique DECIMAL(10,2),
+d_composite1 DECIMAL(10,2),
+d_composite2 DECIMAL(10,2),
+INDEX idx_indexed (d_indexed),
+UNIQUE INDEX uk_unique (d_unique),
+INDEX idx_composite (d_composite1, d_composite2)
+);
+INSERT INTO test_where_conditions VALUES
+(1, 100.00, 100.00, 100.00, 100.00, 200.00);
+INSERT INTO test_where_conditions VALUES
+(2, 100.01, 100.01, 100.01, 100.00, 200.01);
+INSERT INTO test_where_conditions VALUES
+(3, 100.10, 100.10, 100.10, 100.01, 200.00);
+INSERT INTO test_where_conditions VALUES
+(4, 100.99, 100.99, 100.99, 100.99, 200.99);
+INSERT INTO test_where_conditions VALUES
+(5, 100.02, 100.02, 100.02, 100.02, 200.02);
+INSERT INTO test_where_conditions VALUES
+(6, 100.05, 100.05, 100.05, 100.05, 200.05);
+INSERT INTO test_where_conditions VALUES
+(7, -100.00, -100.00, -100.00, -100.00, -200.00);
+INSERT INTO test_where_conditions VALUES
+(8, 0.00, 0.00, 1000.00, 0.00, 0.00);
+INSERT INTO test_where_conditions VALUES
+(9, NULL, 100.00, 2000.00, 100.00, 100.00);
+SELECT 'Test 1: 精确匹配 - 无索引字段' as test_case;
+test_case
+Test 1: 精确匹配 - 无索引字段
+SELECT * FROM test_where_conditions WHERE d_normal = 100.00;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+1	100.00	100.00	100.00	100.00	200.00
+SELECT * FROM test_where_conditions WHERE d_normal = 100.000;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+1	100.00	100.00	100.00	100.00	200.00
+SELECT * FROM test_where_conditions WHERE d_normal = 100;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+1	100.00	100.00	100.00	100.00	200.00
+SELECT * FROM test_where_conditions WHERE d_normal = 100.0;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+1	100.00	100.00	100.00	100.00	200.00
+SELECT * FROM test_where_conditions WHERE d_normal = '100.00';
+Error 1105 (HY000): Scale must be between 0 and 30
+SELECT * FROM test_where_conditions WHERE d_normal = '100';
+Error 1105 (HY000): Scale must be between 0 and 30
+SELECT 'Test 2: 精确匹配 - 有索引字段' as test_case;
+test_case
+Test 2: 精确匹配 - 有索引字段
+describe SELECT * FROM test_where_conditions WHERE d_indexed = 100.00;
+id	estRows	task	accessObject	info
+root-collect	15.0	root	 	 
+ streaming	15.0	root	 	 
+  dingoGetByIndex	15.0	root	[idx_indexed]	=($2, 100.00)
+SELECT * FROM test_where_conditions WHERE d_indexed = 100.00;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+SELECT * FROM test_where_conditions WHERE d_indexed = 100.004;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+SELECT * FROM test_where_conditions WHERE d_indexed = 100.005;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+SELECT 'Test 3: 不等比较' as test_case;
+test_case
+Test 3: 不等比较
+SELECT * FROM test_where_conditions WHERE d_normal != 100.00;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+2	100.01	100.01	100.01	100.00	200.01
+3	100.10	100.10	100.10	100.01	200.00
+4	100.99	100.99	100.99	100.99	200.99
+5	100.02	100.02	100.02	100.02	200.02
+6	100.05	100.05	100.05	100.05	200.05
+7	-100.00	-100.00	-100.00	-100.00	-200.00
+8	0.00	0.00	1000.00	0.00	0.00
+SELECT * FROM test_where_conditions WHERE NOT d_normal = 100.00;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+2	100.01	100.01	100.01	100.00	200.01
+3	100.10	100.10	100.10	100.01	200.00
+4	100.99	100.99	100.99	100.99	200.99
+5	100.02	100.02	100.02	100.02	200.02
+6	100.05	100.05	100.05	100.05	200.05
+7	-100.00	-100.00	-100.00	-100.00	-200.00
+8	0.00	0.00	1000.00	0.00	0.00
+SELECT * FROM test_where_conditions WHERE d_indexed != 100.00;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+2	100.01	100.01	100.01	100.00	200.01
+3	100.10	100.10	100.10	100.01	200.00
+4	100.99	100.99	100.99	100.99	200.99
+5	100.02	100.02	100.02	100.02	200.02
+6	100.05	100.05	100.05	100.05	200.05
+7	-100.00	-100.00	-100.00	-100.00	-200.00
+8	0.00	0.00	1000.00	0.00	0.00
+SELECT 'Test 4: 范围查询' as test_case;
+test_case
+Test 4: 范围查询
+SELECT * FROM test_where_conditions WHERE d_normal > 100.00;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+2	100.01	100.01	100.01	100.00	200.01
+3	100.10	100.10	100.10	100.01	200.00
+4	100.99	100.99	100.99	100.99	200.99
+5	100.02	100.02	100.02	100.02	200.02
+6	100.05	100.05	100.05	100.05	200.05
+SELECT * FROM test_where_conditions WHERE d_normal >= 100.00;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+1	100.00	100.00	100.00	100.00	200.00
+2	100.01	100.01	100.01	100.00	200.01
+3	100.10	100.10	100.10	100.01	200.00
+4	100.99	100.99	100.99	100.99	200.99
+5	100.02	100.02	100.02	100.02	200.02
+6	100.05	100.05	100.05	100.05	200.05
+SELECT * FROM test_where_conditions WHERE d_normal < 100.00;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+7	-100.00	-100.00	-100.00	-100.00	-200.00
+8	0.00	0.00	1000.00	0.00	0.00
+SELECT * FROM test_where_conditions WHERE d_normal <= 100.00;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+1	100.00	100.00	100.00	100.00	200.00
+7	-100.00	-100.00	-100.00	-100.00	-200.00
+8	0.00	0.00	1000.00	0.00	0.00
+SELECT * FROM test_where_conditions WHERE d_normal BETWEEN 100.00 AND 100.10;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+1	100.00	100.00	100.00	100.00	200.00
+2	100.01	100.01	100.01	100.00	200.01
+3	100.10	100.10	100.10	100.01	200.00
+5	100.02	100.02	100.02	100.02	200.02
+6	100.05	100.05	100.05	100.05	200.05
+SELECT * FROM test_where_conditions WHERE d_normal NOT BETWEEN 100.00 AND 100.10;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+4	100.99	100.99	100.99	100.99	200.99
+7	-100.00	-100.00	-100.00	-100.00	-200.00
+8	0.00	0.00	1000.00	0.00	0.00
+SELECT 'Test 5: NULL 值' as test_case;
+test_case
+Test 5: NULL 值
+SELECT * FROM test_where_conditions WHERE d_normal IS NULL;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+9	NULL	100.00	2000.00	100.00	100.00
+SELECT * FROM test_where_conditions WHERE d_normal IS NOT NULL;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+1	100.00	100.00	100.00	100.00	200.00
+2	100.01	100.01	100.01	100.00	200.01
+3	100.10	100.10	100.10	100.01	200.00
+4	100.99	100.99	100.99	100.99	200.99
+5	100.02	100.02	100.02	100.02	200.02
+6	100.05	100.05	100.05	100.05	200.05
+7	-100.00	-100.00	-100.00	-100.00	-200.00
+8	0.00	0.00	1000.00	0.00	0.00
+SELECT * FROM test_where_conditions WHERE d_normal = NULL;
+id	d_normal	d_indexed	d_unique	d_composite1	d_composite2
+drop table if exists test_decimal_insert_int;
+CREATE TABLE test_decimal_insert_int (
+id INT PRIMARY KEY,
+d_decimal DECIMAL(10,2)
+);
+INSERT INTO test_decimal_insert_int VALUES (1, 100);
+INSERT INTO test_decimal_insert_int VALUES (2, 100.00);
+INSERT INTO test_decimal_insert_int VALUES (3, 100.000);
+SELECT * FROM test_decimal_insert_int;
+id	d_decimal
+1	100.00
+2	100.00
+3	100.00

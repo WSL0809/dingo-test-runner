@@ -1,0 +1,107 @@
+--echo ========== 使用统一表结构测试所有unique index用例 ==========
+
+drop table if exists t_unique_comprehensive;
+CREATE TABLE t_unique_comprehensive (
+    id INT NOT NULL AUTO_INCREMENT,
+    unique_varchar VARCHAR(50),
+    unique_nullable_int INT DEFAULT NULL,
+    composite_col1 BIGINT,
+    composite_col2 DATE,
+    data_payload DOUBLE,
+    create_time TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_varchar (unique_varchar),
+    UNIQUE KEY uk_nullable_int (unique_nullable_int),
+    UNIQUE KEY uk_composite (composite_col1, composite_col2),
+    UNIQUE KEY uk_create_time (create_time)
+) ENGINE=TXN_LSM;
+
+--echo 1. 测试单列unique index - VARCHAR类型
+insert into t_unique_comprehensive (unique_varchar, data_payload) values ('test1', 1.1);
+
+--echo 2. 测试可为NULL的unique index
+insert into t_unique_comprehensive (unique_nullable_int, data_payload) values (100, 4.4);
+insert into t_unique_comprehensive (unique_nullable_int, data_payload) values (NULL, 5.5);
+--error
+insert into t_unique_comprehensive (unique_nullable_int, data_payload) values (100, 7.7);
+
+--echo 3. 测试组合unique index
+insert into t_unique_comprehensive (composite_col1, composite_col2, data_payload) values (1000, '2024-01-01', 8.8);
+insert into t_unique_comprehensive (composite_col1, composite_col2, data_payload) values (1000, '2024-01-02', 9.9);
+insert into t_unique_comprehensive (composite_col1, composite_col2, data_payload) values (1001, '2024-01-01', 10.0);
+--error ER_DUP_ENTRY
+insert into t_unique_comprehensive (composite_col1, composite_col2, data_payload) values (1000, '2024-01-01', 11.1);
+
+--echo 4. 测试TIMESTAMP类型unique index
+insert into t_unique_comprehensive (create_time, data_payload) values ('2024-01-01 10:00:00', 12.2);
+insert into t_unique_comprehensive (create_time, data_payload) values ('2024-01-01 11:00:00', 13.3);
+--error ER_DUP_ENTRY
+insert into t_unique_comprehensive (create_time, data_payload) values ('2024-01-01 10:00:00', 14.4);
+
+--echo 5. 查看当前表结构和数据
+show create table t_unique_comprehensive;
+select * from t_unique_comprehensive order by id;
+
+--echo 6. 测试UPDATE操作 - 成功更新为新的唯一值
+update t_unique_comprehensive set unique_varchar = 'updated_test1' where unique_varchar = 'test1';
+
+--echo 7. 测试UPDATE操作 - 尝试更新为已存在的值（应该失败）
+--error ER_DUP_ENTRY
+update t_unique_comprehensive set unique_varchar = 'test2' where unique_varchar = 'updated_test1';
+
+--echo 8. 测试UPDATE非unique列（应该成功）
+update t_unique_comprehensive set data_payload = 999.9 where unique_varchar = 'updated_test1';
+
+--echo 9. 测试DELETE操作
+delete from t_unique_comprehensive where unique_varchar = 'updated_test1';
+
+insert into t_unique_comprehensive (unique_varchar, data_payload) values ('updated_test1', 15.5);
+
+--echo 10. 测试ALTER TABLE - 添加新的unique index
+alter table t_unique_comprehensive add unique key uk_payload (data_payload);
+show create table t_unique_comprehensive;
+
+--echo 11. 测试新添加的unique index
+--error ER_DUP_ENTRY
+insert into t_unique_comprehensive (data_payload) values (999.9);
+
+--echo 12. 测试DROP INDEX
+alter table t_unique_comprehensive drop index uk_payload;
+insert into t_unique_comprehensive (data_payload) values (999.9);
+
+--echo 13. 测试RENAME COLUMN（如果支持）
+alter table t_unique_comprehensive change column unique_varchar renamed_varchar VARCHAR(50);
+show create table t_unique_comprehensive;
+--error ER_DUP_ENTRY
+insert into t_unique_comprehensive (renamed_varchar, data_payload) values ('test2', 16.6);
+
+--echo 14. 测试DROP COLUMN
+alter table t_unique_comprehensive drop column renamed_varchar;
+show create table t_unique_comprehensive;
+insert into t_unique_comprehensive (data_payload) values (17.7);
+
+--echo 15. 测试ON DUPLICATE KEY UPDATE
+insert into t_unique_comprehensive (unique_nullable_int, data_payload) values (100, 18.8) on duplicate key update data_payload = values(data_payload);
+select * from t_unique_comprehensive where unique_nullable_int = 100;
+
+--echo 16. 测试REPLACE语句
+replace into t_unique_comprehensive (id, composite_col1, composite_col2, data_payload) 
+select id, composite_col1, composite_col2, 19.9 from t_unique_comprehensive where composite_col1 = 1000 and composite_col2 = '2024-01-01';
+
+--echo 20. 性能测试 - 批量插入
+insert into t_unique_comprehensive (composite_col1, composite_col2, data_payload) values 
+(2000, '2024-02-01', 20.1),
+(2001, '2024-02-01', 20.2),
+(2002, '2024-02-01', 20.3),
+(2000, '2024-02-02', 20.4),
+(2001, '2024-02-02', 20.5);
+
+--echo 21. 验证最终状态
+select count(*) as total_rows from t_unique_comprehensive;
+show create table t_unique_comprehensive;
+
+--echo 22. 清理测试环境
+drop table t_unique_comprehensive;
+
+--echo ========== 所有unique index测试完成 ==========
+
