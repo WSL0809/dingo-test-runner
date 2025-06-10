@@ -1,4 +1,4 @@
-# MySQL Tester 邮件通知功能
+# MySQL Tester 邮件功能实现逻辑总结
 
 ## 概述
 
